@@ -30,10 +30,10 @@ HTML Table (First 10 Rows) – Displays filtered data without requiring Jinja2.
 ![Table Screenshot](assets/FilteredDiamonds.png)
 
 Histogram (Matplotlib + Seaborn) – Price distribution of filtered diamonds.
-![Histogram Screenshot](asset/PriceDistribution.png)
+![Histogram Screenshot](assets/PriceDistribution.png)
 
 Scatterplot (Matplotlib + Seaborn) – Carat vs Price, colored by clarity.
-![Scatterplot Screenshot](asset/ByClarity.png)
+![Scatterplot Screenshot](assets/ByClarity.png)
 
 ### Dataset
 Uses the built-in Seaborn diamonds dataset:
@@ -67,7 +67,7 @@ Tracks the last 50 simulated metric values using a reactive value price_history.
 Uses @reactive.effect combined with @reactive.event(fake_metric) to append new data points only when fake_metric changes (avoiding infinite loops).
 
 Plots a histogram (orange) of simulated price values updating every 5 seconds.
-![Histogram Screenshot](asset/LiveHistogram.png)
+![Histogram Screenshot](assets/LiveHistogram.png)
 
 #### How It Works
 Reactive Flow
@@ -116,7 +116,7 @@ Plot output: render.plot()
 ### Updated Features:
 
 Live Sparkline: Minimal line chart showing real-time trend of simulated prices.
-![Sparkline Screenshot](asset/PriceTrend.png)
+![Sparkline Screenshot](assets/PriceTrend.png)
 
 Enhancements
 
