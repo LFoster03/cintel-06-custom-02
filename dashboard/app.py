@@ -1,37 +1,24 @@
 # ================================================================
-# Diamonds Exploration
+# Diamonds Exploration (Plotly Version with Sparkline)
 # ================================================================
-# Sections:
-# 1. Imports
-# 2. Reactive Calculations (Filtered Data + Simulated Metric)
-# 3. Shiny Express UI (Page, Sidebar, Main Content)
-# ================================================================
-
-# ------------------------------------------------
-# 1. Imports
-# ------------------------------------------------
 from shiny.express import ui, input, render
 from shiny import reactive
+from shinywidgets import render_plotly
 import seaborn as sns
-import matplotlib.pyplot as plt
+import pandas as pd
 import random
+import plotly.express as px
 
-# ------------------------------------------------
-# Data Source
-# ------------------------------------------------
-# Using Seaborn's built-in diamonds dataset
+# Load diamonds dataset
 diamonds = sns.load_dataset("diamonds")
 
 # ------------------------------------------------
-# 2. Reactive Calculations
+# Reactive Calculations
 # ------------------------------------------------
 
 @reactive.calc
 def filtered_data():
-    """
-    Filter the diamonds dataset based on user inputs.
-    This drives all downstream outputs (summary, table, charts).
-    """
+    """Filter diamonds based on user inputs."""
     df = diamonds.copy()
 
     # Filter by cut
@@ -48,40 +35,28 @@ def filtered_data():
 
 @reactive.calc
 def fake_metric():
-    """
-    Simulate a metric that updates every 5 seconds.
-    Could represent a live KPI like average market price.
-    """
-    reactive.invalidate_later(5)  # updates every 5 seconds
+    """Simulate metric (updates every 5 seconds)."""
+    reactive.invalidate_later(5)
     return round(random.uniform(3000, 5000), 2)
 
-# Track history of fake metrics for live histogram
+# Track metric history
 price_history = reactive.value([])
 
 @reactive.effect
 @reactive.event(fake_metric)
 def _update_price_history():
-    """
-    Append each new fake metric to history for live histogram.
-    Triggered only when fake_metric() produces a new value.
-    Keeps only the last 50 values for performance.
-    """
-    new_value = fake_metric()
-    history = price_history.get() + [new_value]
+    history = price_history.get() + [fake_metric()]
     price_history.set(history[-50:])  # keep last 50 values
 
 # ------------------------------------------------
-# 3. Shiny Express UI
+# UI
 # ------------------------------------------------
 
-# --- Page Options ---
 ui.page_opts(title="Foster Diamonds Inspection 💎", fillable=True)
 
-# --- Sidebar ---
 with ui.sidebar():
     ui.h3("Filters")
 
-    # Cut (single select dropdown)
     ui.input_select(
         "cut",
         "Select cut:",
@@ -89,7 +64,6 @@ with ui.sidebar():
         selected="Ideal"
     )
 
-    # Color (multi-select checkbox group)
     ui.input_checkbox_group(
         "color",
         "Select colors:",
@@ -97,7 +71,6 @@ with ui.sidebar():
         selected=["D", "E", "F"]
     )
 
-    # Price range (slider)
     ui.input_slider(
         "price_range",
         "Price range (USD):",
@@ -107,9 +80,7 @@ with ui.sidebar():
         step=100
     )
 
-# --- Main Content ---
-
-# Value Box: Render dynamically for simulated avg price
+# Value Box
 @render.ui
 def avg_price_box():
     return ui.value_box(
@@ -118,7 +89,7 @@ def avg_price_box():
         showcase="💰"
     )
 
-# Card: Summary text
+# Summary card
 with ui.card():
     ui.card_header("Summary 💎")
 
@@ -127,57 +98,79 @@ with ui.card():
         count = len(filtered_data())
         return f"{count} diamonds match your filters."
 
-# Table: First 10 rows of filtered data (HTML)
+# Table
 @render.ui
 def summary_table():
-    df = filtered_data().head(10)
-    html_table = df.to_html(classes="table table-striped", index=False, border=0)
+    df = filtered_data()
+    if df.empty:
+        return ui.HTML("<p style='color:red;'>No diamonds match your filters.</p>")
+
+    html_table = df.head(10).to_html(classes="table table-striped", index=False, border=0)
     return ui.HTML(html_table)
 
-# Chart: Histogram of filtered diamonds price
-@render.plot
+# Plotly Histogram (Filtered Diamonds)
+@render_plotly
 def price_histogram():
-    plt.figure(figsize=(6, 4))
-    sns.histplot(filtered_data()["price"], bins=30, kde=False, color="skyblue")
-    plt.xlabel("Price (USD)")
-    plt.ylabel("Count")
-    plt.title("Price Distribution (Filtered Diamonds)")
-    return plt.gcf()
+    df = filtered_data()
+    if df.empty:
+        return px.histogram(pd.DataFrame({"price": []}))  # empty plot
 
-# Chart: Scatterplot of carat vs price
-@render.plot
+    fig = px.histogram(df, x="price", nbins=30, title="Price Distribution (Filtered Diamonds)")
+    fig.update_layout(xaxis_title="Price (USD)", yaxis_title="Count")
+    return fig
+
+# Plotly Scatterplot (Carat vs Price)
+@render_plotly
 def carat_vs_price():
-    plt.figure(figsize=(6, 4))
-    sns.scatterplot(
-        data=filtered_data(),
+    df = filtered_data()
+    if df.empty:
+        return px.scatter(pd.DataFrame({"carat": [], "price": []}))
+
+    fig = px.scatter(
+        df,
         x="carat",
         y="price",
-        hue="clarity",
-        palette="viridis",
-        alpha=0.7
+        color="clarity",
+        title="Carat vs Price by Clarity",
+        opacity=0.7
     )
-    plt.title("Carat vs Price by Clarity")
-    return plt.gcf()
+    return fig
 
-# Chart: Live histogram of simulated average prices
-@render.plot
+# Plotly Histogram (Simulated Prices)
+@render_plotly
 def simulated_price_histogram():
-    """
-    Histogram showing distribution of simulated average prices.
-    Updates every 5 seconds alongside the value box.
-    """
-    plt.figure(figsize=(6, 4))
+    data = price_history.get()
+
+    if len(data) == 0:
+        return px.histogram(pd.DataFrame({"price": []}))
+
+    fig = px.histogram(
+        pd.DataFrame({"Simulated Price": data}),
+        x="Simulated Price",
+        nbins=10,
+        title="Live Histogram of Simulated Avg Prices",
+        color_discrete_sequence=["orange"]
+    )
+    return fig
+
+# Plotly Line Chart (Sparkline for Simulated Price Trend)
+@render_plotly
+def simulated_price_sparkline():
     data = price_history.get()
 
     # Handle case where no data yet
     if len(data) == 0:
-        return plt.gcf()
+        return px.line(pd.DataFrame({"Price": []}))
 
-    sns.histplot(data, bins=10, color="orange")
-    plt.xlabel("Simulated Avg Price (USD)")
-    plt.ylabel("Frequency")
-    plt.title("Live Histogram of Simulated Avg Prices")
-    return plt.gcf()
+    # Create line chart (sparkline style: minimal axes)
+    df = pd.DataFrame({"Index": range(len(data)), "Price": data})
+    fig = px.line(df, x="Index", y="Price", title="Live Simulated Price Trend")
 
+    fig.update_layout(
+        xaxis=dict(showgrid=False, showticklabels=False),
+        yaxis=dict(showgrid=False),
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=200
+    )
 
-
+    return fig
