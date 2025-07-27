@@ -1,4 +1,4 @@
-# Foster Diamonds Explorer 💎
+# Foster Diamonds Inspection 💎
 ## Author: Lindsay Foster
 ## Date: July 2025
 This dashboard explores the Seaborn Diamonds dataset using PyShiny and Plotly.
