@@ -4,7 +4,7 @@
 This dashboard explores the Seaborn Diamonds dataset using PyShiny and Plotly.
 It allows users to filter diamonds by cut, color, and price range and view interactive charts, tables, and a live simulated KPI with both histogram and sparkline visualizations.
 
-![App Screenshot](C:\Projects\cintel-06-custom-02\assets\DiamondsPrice.png)
+![App Screenshot](assets\DiamondsPrice.png)
 
 ## Features
 ### Reactive Aspects
